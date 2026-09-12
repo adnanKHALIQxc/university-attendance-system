@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/department.dart';
 import '../services/department_service.dart';
 import 'add_department_screen.dart';
+import 'years_screen.dart';
 
 class DepartmentsListScreen extends StatefulWidget {
   const DepartmentsListScreen({super.key});
@@ -66,9 +67,12 @@ class _DepartmentsListScreenState extends State<DepartmentsListScreen> {
                   title: Text(dept.name),
                   subtitle: Text('Code: ${dept.id}'),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
-                    // Years screen comes in next step
-                  },
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => YearsScreen(department: dept),
+                    ),
+                  ),
                 );
               },
             ),
