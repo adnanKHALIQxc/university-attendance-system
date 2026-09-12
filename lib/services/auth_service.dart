@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import '../firebase_options.dart';
 
 class AuthService {
@@ -33,7 +34,7 @@ class AuthService {
       await _auth.signOut();
       return null;
     } catch (e) {
-      print('Login error: $e');
+      debugPrint('Login error: $e');
       return null;
     }
   }
@@ -88,7 +89,7 @@ class AuthService {
 
       return (id: teacherId, password: generatedPassword);
     } catch (e) {
-      print('Create teacher error: $e');
+      debugPrint('Create teacher error: $e');
       rethrow;
     }
   }
