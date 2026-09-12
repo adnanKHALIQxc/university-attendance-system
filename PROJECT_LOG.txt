@@ -192,6 +192,16 @@ SECTION 6 — ERRORS FACED & HOW WE FIXED THEM
            Doc ID must MATCH the Auth UID exactly
   Note   : This error is easy to hit again — remember the UID-linking rule
 
+[ERROR 17] Excel import rejected all rows with "Enrollment ID can only contain letters, digits, and hyphens"
+  Cause  : Enrollment IDs in real university data use forward slashes
+           e.g., "NED/0234/2024" — my regex only allowed hyphens
+  Fix    : Updated regex to allow forward slash:
+             ^[A-Za-z0-9\-/]+$   (both rollNo and enrollmentId)
+           Added diagnostic char-code output to error messages during
+           debugging, then removed after root cause found
+  Lesson : Validate against REAL data files, not hypothetical formats
+
+
 [NOTE] Section name validation allows 1-2 letters, not just 1.
   Status: Intentional for now — will revisit if strict single-letter
           sections are required. Current behavior: "AB" is accepted.
@@ -258,13 +268,18 @@ DONE ✅
   - Add Student form (name, roll, enrollment)
   - totalStudents counter auto-incrementing
 
+- Excel/CSV import for bulk student upload
+  - Atomic import (all-or-nothing — no partial writes on error)
+  - Duplicate detection (within file + against Firestore)
+  - File preview with per-row error reporting
+  - totalStudents counter auto-increments on import
+
 NOT YET BUILT ❌
   - Students management (inside sections)
   - Assign teachers to sections
   - Subjects
   - Attendance marking
   - Attendance history
-  - Excel export
   - Change-password on first login
   - Deployment to Play Store
 
@@ -275,13 +290,18 @@ NOT YET BUILT ❌
 SECTION 9 — NEXT UP
 ================================================================================
 
-NEXT FEATURE: Excel / CSV import for bulk student upload
-  Branch: feature/student-import
+NEXT FEATURE: Assign Teachers to Sections
+  Branch: feature/assign-teachers
   What to build:
-    - Upload CSV / Excel file from section detail screen
-    - Parse rows into Student documents
-    - Batch write to Firestore
-    - Show import summary (succeeded / failed rows)
+    - Admin can assign 1+ teachers to a section
+    - Teachers see their assigned sections on login
+    - Prepares for attendance marking
+
+LATER:
+  - Expand student attributes (more fields in Excel import)
+  - Subjects + enrollment
+  - Mark attendance
+  - Excel export
 
 ================================================================================
 END OF LOG
