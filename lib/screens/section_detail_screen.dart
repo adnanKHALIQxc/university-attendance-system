@@ -3,6 +3,7 @@ import '../models/section.dart';
 import '../models/student.dart';
 import '../services/student_service.dart';
 import 'add_student_screen.dart';
+import 'import_students_screen.dart';
 
 class SectionDetailScreen extends StatefulWidget {
   final Section section;
@@ -29,10 +30,29 @@ class _SectionDetailScreenState extends State<SectionDetailScreen> {
     });
   }
 
+  Future<void> _openImport() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ImportStudentsScreen(section: widget.section),
+      ),
+    );
+    _refresh();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Section ${widget.section.id}')),
+      appBar: AppBar(
+        title: Text('Section ${widget.section.id}'),
+        actions: [
+          IconButton(
+            tooltip: 'Import from Excel/CSV',
+            icon: const Icon(Icons.upload_file),
+            onPressed: _openImport,
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         icon: const Icon(Icons.person_add),
         label: const Text('Add Student'),
@@ -58,7 +78,11 @@ class _SectionDetailScreenState extends State<SectionDetailScreen> {
           final students = snapshot.data ?? [];
           if (students.isEmpty) {
             return const Center(
-              child: Text('No students yet. Tap + to add one.'),
+              child: Text(
+                'No students yet.\n'
+                'Tap + to add one, or use the upload icon to import.',
+                textAlign: TextAlign.center,
+              ),
             );
           }
           return ListView.builder(
