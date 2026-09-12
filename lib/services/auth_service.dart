@@ -1,16 +1,23 @@
 import 'dart:math';
-import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
+
 import '../firebase_options.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Returns role ('admin' or 'teacher') if login succeeds, else null.
-  Future<String?> login(String id, String password) async {
+  User? get currentUser => _auth.currentUser;
+
+  /// Returns a Result with either role or error message.
+  Future<({String? role, String? error})> login(
+    String id,
+    String password,
+  ) async {
     try {
       final email = '$id@uniattend.local';
 
@@ -19,23 +26,36 @@ class AuthService {
         password: password,
       );
 
-      final uid = credential.user!.uid;
+            final uid = credential.user!.uid;
 
-      // Check admin collection first
-      final adminDoc = await _firestore.collection('admins').doc(uid).get();
-      if (adminDoc.exists) return 'admin';
-
-      // Check teacher collection
+      // Check teacher collection FIRST — rules allow any signed-in user
+      // to read this collection, so it works for teachers AND admins.
       final teacherDoc =
           await _firestore.collection('teachers').doc(uid).get();
-      if (teacherDoc.exists) return teacherDoc.data()?['role'] ?? 'teacher';
+      if (teacherDoc.exists) {
+        final role = (teacherDoc.data()?['role'] as String?) ?? 'teacher';
+        return (role: role, error: null);
+      }
 
-      // Auth user exists but no Firestore record — reject
+      // Then check admin collection — only reachable if teacher check failed
+      final adminDoc = await _firestore.collection('admins').doc(uid).get();
+      if (adminDoc.exists) {
+        return (role: 'admin', error: null);
+      }
+
+      // Auth user exists but no Firestore record
       await _auth.signOut();
-      return null;
+      return (
+        role: null,
+        error: 'Signed in, but no profile found in Firestore. '
+            'Check that the teacher doc ID matches the Auth UID exactly.',
+      );
+    } on FirebaseAuthException catch (e) {
+      debugPrint('FirebaseAuthException: ${e.code} — ${e.message}');
+      return (role: null, error: 'Auth error [${e.code}]: ${e.message}');
     } catch (e) {
       debugPrint('Login error: $e');
-      return null;
+      return (role: null, error: 'Unknown: $e');
     }
   }
 
@@ -43,13 +63,10 @@ class AuthService {
     await _auth.signOut();
   }
 
-  /// Creates a teacher account with an auto-generated 6-digit ID + password.
-  /// Returns a record containing the generated credentials.
   Future<({String id, String password})> createTeacher({
     required String fullName,
     required String contactEmail,
   }) async {
-    // 1. Get or create secondary Firebase app
     FirebaseApp secondaryApp;
     try {
       secondaryApp = Firebase.app('SecondaryApp');
@@ -61,13 +78,11 @@ class AuthService {
     }
     final secondaryAuth = FirebaseAuth.instanceFor(app: secondaryApp);
 
-    // 2. Generate credentials
     final teacherId = (100000 + Random().nextInt(900000)).toString();
     final generatedEmail = '$teacherId@uniattend.local';
     final generatedPassword = _generatePassword();
 
     try {
-      // 3. Create Firebase Auth user via secondary app
       final cred = await secondaryAuth.createUserWithEmailAndPassword(
         email: generatedEmail,
         password: generatedPassword,
@@ -75,7 +90,6 @@ class AuthService {
       final uid = cred.user!.uid;
       await secondaryAuth.signOut();
 
-      // 4. Write Firestore doc from PRIMARY app (admin's session)
       await _firestore.collection('teachers').doc(uid).set({
         'id': teacherId,
         'fullName': fullName,
@@ -84,9 +98,11 @@ class AuthService {
         'role': 'teacher',
         'isActive': true,
         'hasChangedPassword': false,
+        'assignedSectionIds': <String>[],
         'createdAt': FieldValue.serverTimestamp(),
       });
 
+      debugPrint('Created teacher: id=$teacherId uid=$uid');
       return (id: teacherId, password: generatedPassword);
     } catch (e) {
       debugPrint('Create teacher error: $e');
@@ -95,7 +111,6 @@ class AuthService {
   }
 
   String _generatePassword() {
-    // 8-char random password: letters + digits
     const chars =
         'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     final rnd = Random.secure();

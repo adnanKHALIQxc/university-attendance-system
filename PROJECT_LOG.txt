@@ -202,6 +202,19 @@ SECTION 6 — ERRORS FACED & HOW WE FIXED THEM
   Lesson : Validate against REAL data files, not hypothetical formats
 
 
+  [ERROR 18] Teacher login failed with "invalid ID or password"
+  Cause  : auth_service.dart checked the admins collection BEFORE teachers
+           Firestore rule for admins requires isAdmin() → blocks teachers
+           The read failed with permission-denied before reaching the
+           teachers collection check
+  Fix    : Reversed the order — check teachers collection first
+           (rules allow any signed-in user to read it)
+  Lesson : Firestore permission-denied errors can surface as "invalid login"
+           symptoms. Always expose raw Firebase errors during development.
+  Bonus  : Our original login catch-all message hid this for weeks.
+           Added detailed FirebaseAuthException handling to prevent recurrence.
+
+
 [NOTE] Section name validation allows 1-2 letters, not just 1.
   Status: Intentional for now — will revisit if strict single-letter
           sections are required. Current behavior: "AB" is accepted.
@@ -267,6 +280,15 @@ DONE ✅
   - Section detail screen with student list
   - Add Student form (name, roll, enrollment)
   - totalStudents counter auto-incrementing
+    - Subjects management (admin: list + add)
+  - Teaching assignments: teacher + subject + section trio
+  - Assign/remove teacher from section (dropdown UI)
+  - Teacher dashboard: shows assigned classes
+  - Duplicate assignment detection
+  - Section detail: shows assignments + students
+  - Detailed Firebase error reporting during login
+  - Password field: eye icon to verify typed password
+  - Login form: disabled autocorrect/autocapitalize for reliability
 
 - Excel/CSV import for bulk student upload
   - Atomic import (all-or-nothing — no partial writes on error)
@@ -290,18 +312,18 @@ NOT YET BUILT ❌
 SECTION 9 — NEXT UP
 ================================================================================
 
-NEXT FEATURE: Assign Teachers to Sections
-  Branch: feature/assign-teachers
+NEXT FEATURE: Reset Teacher Password
+  Branch: feature/reset-teacher-password
   What to build:
-    - Admin can assign 1+ teachers to a section
-    - Teachers see their assigned sections on login
-    - Prepares for attendance marking
+    - Admin can generate a new password for any teacher
+    - Requires Cloud Functions (server-side admin SDK)
+    - Shows new credentials in a dialog
 
 LATER:
-  - Expand student attributes (more fields in Excel import)
-  - Subjects + enrollment
+  - Move Subjects card inside department screen (dept-specific subjects)
   - Mark attendance
-  - Excel export
+  - Excel export of attendance
+  - Expand student attributes
 
 ================================================================================
 END OF LOG
