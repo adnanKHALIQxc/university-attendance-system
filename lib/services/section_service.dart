@@ -36,6 +36,30 @@ class SectionService {
     });
   }
 
+    /// Fetches sections matching a list of IDs. Used by teacher dashboard.
+  Future<List<Section>> getSectionsByIds(List<String> ids) async {
+    if (ids.isEmpty) return [];
+
+    // Firestore `whereIn` has a max of 30 items per query.
+    // For this app it's fine; if a teacher ever has more, chunk them.
+    final chunks = <List<String>>[];
+    for (var i = 0; i < ids.length; i += 30) {
+      chunks.add(ids.sublist(
+        i,
+        i + 30 > ids.length ? ids.length : i + 30,
+      ));
+    }
+
+    final results = <Section>[];
+    for (final chunk in chunks) {
+      final snap = await _sections.where(FieldPath.documentId, whereIn: chunk).get();
+      results.addAll(snap.docs.map((d) => Section.fromFirestore(d)));
+    }
+
+    results.sort((a, b) => a.id.compareTo(b.id));
+    return results;
+  }
+
   Future<List<Section>> getSections(String departmentId, int year) async {
     final snap = await _sections
         .where('departmentId', isEqualTo: departmentId)

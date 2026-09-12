@@ -24,13 +24,13 @@ class AuthProvider extends ChangeNotifier {
 
     _isLoading = false;
 
-    if (result == null) {
-      _errorMessage = 'Invalid ID or password';
+    if (result.role == null) {
+      _errorMessage = result.error ?? 'Unknown error';
       notifyListeners();
       return false;
     }
 
-    _role = result;
+    _role = result.role;
     notifyListeners();
     return true;
   }
