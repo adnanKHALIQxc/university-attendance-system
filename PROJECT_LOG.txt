@@ -192,6 +192,10 @@ SECTION 6 — ERRORS FACED & HOW WE FIXED THEM
            Doc ID must MATCH the Auth UID exactly
   Note   : This error is easy to hit again — remember the UID-linking rule
 
+[NOTE] Section name validation allows 1-2 letters, not just 1.
+  Status: Intentional for now — will revisit if strict single-letter
+          sections are required. Current behavior: "AB" is accepted.
+
 ================================================================================
 SECTION 7 — GIT + GITHUB WORKFLOW (PROFESSIONAL)
 ================================================================================
@@ -248,11 +252,13 @@ DONE ✅
   - Firestore rules updated with role-based access
   - GitHub repo live with CI passing
   - Professional branch + PR workflow in place
-
-NOT YET BUILT ❌
   - Years screen (tap department → see 1st/2nd/3rd/4th year)
   - Sections list + add (inside each year)
-  - Section detail screen
+  - Section detail screen with student list
+  - Add Student form (name, roll, enrollment)
+  - totalStudents counter auto-incrementing
+
+NOT YET BUILT ❌
   - Students management (inside sections)
   - Assign teachers to sections
   - Subjects
@@ -262,19 +268,20 @@ NOT YET BUILT ❌
   - Change-password on first login
   - Deployment to Play Store
 
+
+
+
 ================================================================================
 SECTION 9 — NEXT UP
 ================================================================================
 
-NEXT FEATURE: Years → Sections flow
-  Branch: feature/years-and-sections
+NEXT FEATURE: Excel / CSV import for bulk student upload
+  Branch: feature/student-import
   What to build:
-    - Tap department → YearsScreen (static 1-4)
-    - Tap year → SectionsListScreen (filtered by dept + year)
-    - Add Section screen (name, academic year) → auto-ID "CS-3A"
-    - Section detail screen (placeholder)
-
-LATER: Students management inside section detail.
+    - Upload CSV / Excel file from section detail screen
+    - Parse rows into Student documents
+    - Batch write to Firestore
+    - Show import summary (succeeded / failed rows)
 
 ================================================================================
 END OF LOG
